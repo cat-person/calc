@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 )
 
 func main() {
-	fmt.Println("Hello calc")
+	reader := bufio.NewReader(os.Stdin)
+	equasion, _ := reader.ReadString('\n')
+	fmt.Print(equasion)
 }
