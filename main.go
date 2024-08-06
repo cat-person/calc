@@ -4,31 +4,33 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
 func main() {
 	reader := bufio.NewReader(os.Stdin)
-	input, error := reader.ReadString('\n')
+	givenEquasion, error := reader.ReadString('\n')
 
 	if error != nil {
 		panic(error)
 	}
+	trimmedEquasion := strings.TrimSuffix(givenEquasion, "\n")
 
-	firstRune := input[0] // Should be sufficient
+	firstRune := trimmedEquasion[0] // Should be sufficient
 
 	switch {
-	case firstRune == 'I', firstRune == 'V':
-		fmt.Println(toRoman(calc(parseRoman(input))))
+	case firstRune == 'I' || firstRune == 'V' || firstRune == 'X':
+		fmt.Println(toRoman(calc(parseEqRoman(trimmedEquasion))))
 	case '0' <= firstRune && firstRune <= '9':
-		result, err := calc(parseArabic(input))
+		result, err := calc(parseEqArabic(trimmedEquasion))
 		if err != nil {
 			panic(err)
 		} else {
 			fmt.Println(result)
 		}
 	default:
-		panic(fmt.Errorf("Wrong input: %s", input))
+		panic(fmt.Errorf("Wrong input: %s", trimmedEquasion))
 	}
 }
 
@@ -63,47 +65,64 @@ func toRoman(givenResult int, err error) string {
 	}
 }
 
-func parseRoman(string) (rune, int, int) {
+func parseEqRoman(givenEquasion string) (byte, int, int) {
+	lexemes := strings.Split(givenEquasion, " ")
 
-	return '+', 2, 2
-}
-
-func parseArabic(givenEquasion string) (rune, int, int) {
-	first := 0
-	second := 0
-	sign := '@'
-
-	magicIdx := 0
-
-	for _, char := range givenEquasion {
-		switch {
-		case '0' <= char && char <= '9':
-			if magicIdx == 0 {
-				first = 10*first + int(char) - 48
-			} else if magicIdx == 2 {
-				second = 10*second + int(char) - 48
-			} else {
-				panic(fmt.Errorf("Unable to parse equasion %s", givenEquasion))
-			}
-		case char == '+' || char == '-' || char == '*' || char == '/':
-			if magicIdx == 1 {
-				sign = char
-			} else {
-				panic(fmt.Errorf("Unable to parse equasion %s", givenEquasion))
-			}
-		case char == ' ':
-			magicIdx++ // string shouldnt end here
-		}
+	if len(lexemes) != 3 {
+		panic(fmt.Errorf("Unable to parse %s", givenEquasion))
 	}
 
-	if magicIdx != 2 {
-		panic(fmt.Errorf("Unable to parse equasion %s", givenEquasion))
+	first := parseRomanNum(lexemes[0])
+	sign := lexemes[1][0]
+	second := parseRomanNum(lexemes[2])
+
+	return sign, first, second
+}
+
+func parseRomanNum(givenRomanNum string) int {
+	romanMap := map[string]int{
+		"I":    1,
+		"II":   2,
+		"III":  3,
+		"IV":   4,
+		"V":    5,
+		"VI":   6,
+		"VII":  7,
+		"VIII": 8,
+		"IX":   9,
+		"X":    10,
+	}
+
+	romanNum, ok := romanMap[givenRomanNum]
+
+	if !ok {
+		panic(fmt.Errorf("Unable to parse Roman number %s", givenRomanNum))
+	}
+
+	return romanNum
+}
+
+func parseEqArabic(givenEquasion string) (byte, int, int) {
+	lexemes := strings.Split(givenEquasion, " ")
+
+	if len(lexemes) != 3 {
+		panic(fmt.Errorf("Unable to parse %s", givenEquasion))
+	}
+
+	first, err := strconv.Atoi(lexemes[0])
+	if err != nil {
+		panic(err)
+	}
+	sign := lexemes[1][0]
+	second, err := strconv.Atoi(lexemes[2])
+	if err != nil {
+		panic(err)
 	}
 
 	return sign, first, second
 }
 
-func calc(sign rune, first int, second int) (int, error) {
+func calc(sign byte, first int, second int) (int, error) {
 
 	switch sign {
 	case '+':
