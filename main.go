@@ -10,43 +10,50 @@ import (
 
 func main() {
 	reader := bufio.NewReader(os.Stdin)
-	givenEquasion, error := reader.ReadString('\n')
+	userInput, error := reader.ReadString('\n')
 
 	if error != nil {
 		panic(error)
 	}
-	trimmedEquasion := strings.TrimSuffix(givenEquasion, "\n")
+	trimmedUserInput := strings.TrimSuffix(userInput, "\n")
 
-	firstRune := trimmedEquasion[0] // Should be sufficient
+	result, error := SolveEq(trimmedUserInput)
+
+	if error != nil {
+		panic(error)
+	}
+
+	fmt.Println(result)
+}
+
+func SolveEq(givenEquasion string) (string, error) {
+
+	firstRune := givenEquasion[0] // Should be sufficient
 
 	switch {
 	case firstRune == 'I' || firstRune == 'V' || firstRune == 'X':
-		fmt.Println(toRoman(calc(parseEqRoman(trimmedEquasion))))
+		return toRoman(calc(SolveEqRoman(givenEquasion)))
 	case '0' <= firstRune && firstRune <= '9':
-		result, err := calc(parseEqArabic(trimmedEquasion))
-		if err != nil {
-			panic(err)
+		result, err := calc(SolveEqArabic(givenEquasion))
+		if err == nil {
+			return strconv.Itoa(result), nil
 		} else {
-			fmt.Println(result)
+			return "", err
 		}
 	default:
-		panic(fmt.Errorf("Wrong input: %s", trimmedEquasion))
+		return "", fmt.Errorf("wrong input: %s", givenEquasion)
 	}
 }
 
-func parse() (string, error) {
-	return "a", nil
-}
-
-func toRoman(givenResult int, err error) string {
+func toRoman(givenResult int, err error) (string, error) {
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	if givenResult <= 0 {
 		if givenResult == 0 {
-			panic("Result is zero")
+			return "", fmt.Errorf("result is zero")
 		} else {
-			panic("Result is negative")
+			return "", fmt.Errorf("result is negative")
 		}
 	} else {
 		vals := []int{100, 90, 50, 40, 10, 9, 5, 4, 1}
@@ -61,25 +68,31 @@ func toRoman(givenResult int, err error) string {
 			}
 		}
 
-		return result.String()
+		return result.String(), nil
 	}
 }
 
-func parseEqRoman(givenEquasion string) (byte, int, int) {
+func SolveEqRoman(givenEquasion string) (byte, int, int, error) {
 	lexemes := strings.Split(givenEquasion, " ")
 
 	if len(lexemes) != 3 {
-		panic(fmt.Errorf("Unable to parse %s", givenEquasion))
+		return '@', 0, 0, fmt.Errorf("unable to parse %s", givenEquasion)
 	}
 
-	first := parseRomanNum(lexemes[0])
+	first, err := ParseRomanNum(lexemes[0])
+	if err != nil {
+		return '@', 0, 0, err
+	}
 	sign := lexemes[1][0]
-	second := parseRomanNum(lexemes[2])
+	second, err := ParseRomanNum(lexemes[2])
+	if err != nil {
+		return '@', 0, 0, err
+	}
 
-	return sign, first, second
+	return sign, first, second, nil
 }
 
-func parseRomanNum(givenRomanNum string) int {
+func ParseRomanNum(givenRomanNum string) (int, error) {
 	romanMap := map[string]int{
 		"I":    1,
 		"II":   2,
@@ -96,33 +109,43 @@ func parseRomanNum(givenRomanNum string) int {
 	romanNum, ok := romanMap[givenRomanNum]
 
 	if !ok {
-		panic(fmt.Errorf("Unable to parse Roman number %s", givenRomanNum))
+		return 0, fmt.Errorf("unable to parse %s as roman number", givenRomanNum)
 	}
-
-	return romanNum
+	return romanNum, nil
 }
 
-func parseEqArabic(givenEquasion string) (byte, int, int) {
+func SolveEqArabic(givenEquasion string) (byte, int, int, error) {
 	lexemes := strings.Split(givenEquasion, " ")
 
 	if len(lexemes) != 3 {
-		panic(fmt.Errorf("Unable to parse %s", givenEquasion))
+		return '@', 0, 0, fmt.Errorf("unable to parse")
 	}
 
 	first, err := strconv.Atoi(lexemes[0])
 	if err != nil {
-		panic(err)
+		return '@', 0, 0, err
 	}
 	sign := lexemes[1][0]
 	second, err := strconv.Atoi(lexemes[2])
 	if err != nil {
-		panic(err)
+		return '@', 0, 0, err
 	}
 
-	return sign, first, second
+	return sign, first, second, nil
 }
 
-func calc(sign byte, first int, second int) (int, error) {
+func calc(sign byte, first int, second int, err error) (int, error) {
+	if err != nil {
+		return -1, err
+	}
+
+	if first < 0 || first > 10 {
+		return -1, fmt.Errorf("first argument: %d is outside of allowed borders [0, 10]", first)
+	}
+
+	if second < 0 || second > 10 {
+		return -1, fmt.Errorf("second argument: %d is outside of allowed borders [0, 10]", second)
+	}
 
 	switch sign {
 	case '+':
@@ -134,6 +157,6 @@ func calc(sign byte, first int, second int) (int, error) {
 	case '/':
 		return first / second, nil
 	default:
-		return -1, fmt.Errorf(`Unable to recognise sign %c`, sign)
+		return -1, fmt.Errorf("unable to recognise sign %c", sign)
 	}
 }
